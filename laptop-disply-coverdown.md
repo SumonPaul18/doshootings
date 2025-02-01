@@ -17,6 +17,11 @@
 
 Here's a shell script that automates the process of modifying the power settings to keep the Ubuntu server running even when the laptop display is closed:
 
+Create a Shell Script
+```
+nano update_power_settings.sh
+```
+
 ```sh
 #!/bin/bash
 
