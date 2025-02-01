@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Engineer Dashboard</h1>
+<h2>Assigned Tickets</h2>
+<ul>
+    {% for ticket in tickets %}
+    <li>
+        <a href="{{ url_for('main.ticket_details', ticket_id=ticket.id) }}">{{ ticket.title }}</a> - {{ ticket.status }}
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

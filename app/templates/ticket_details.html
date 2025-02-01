@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Ticket Details</h1>
+<h2>{{ ticket.title }}</h2>
+<p>{{ ticket.description }}</p>
+<p>Status: {{ ticket.status }}</p>
+<p>Created by: {{ ticket.client.username }}</p>
+{% if ticket.engineer %}
+<p>Assigned to: {{ ticket.engineer.username }}</p>
+{% endif %}
+{% endblock %}

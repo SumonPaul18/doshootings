@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Client Dashboard</h1>
+<a href="{{ url_for('main.create_ticket') }}" class="btn btn-primary">Create Ticket</a>
+<h2>Your Tickets</h2>
+<ul>
+    {% for ticket in tickets %}
+    <li>
+        <a href="{{ url_for('main.ticket_details', ticket_id=ticket.id) }}">{{ ticket.title }}</a> - {{ ticket.status }}
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
