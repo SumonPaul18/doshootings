@@ -53,4 +53,4 @@ This script will:
 2. Update the `HandleLidSwitch` and `HandleLidSwitchDocked` settings to `ignore`.
 3. Restart the `systemd-logind` service to apply the changes.
 
-আপনার যদি আরও কোনো প্রশ্ন থাকে বা অন্য কোনো সাহায্য প্রয়োজন হয়, জানাতে দ্বিধা করবেন না! 😊
+
