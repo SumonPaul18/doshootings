@@ -1,17 +1,10 @@
-আপনি একটি টেকনিক্যাল সাপোর্ট সিস্টেম অ্যাপ্লিকেশন তৈরি করতে চাচ্ছেন, যেখানে ক্লায়েন্টরা তাদের প্রোব্লেম শেয়ার করবে এবং সেই প্রোব্লেম গুলো অটোমেটিক্যালি ইঞ্জিনিয়ারদের মধ্যে ভাগ হয়ে যাবে। এই অ্যাপ্লিকেশনটি তৈরি করতে আমরা Flask, Redis, SQLite, এবং Bootstrap 5 ব্যবহার করব। এছাড়াও, আমরা Docker ব্যবহার করে অ্যাপ্লিকেশনটি কন্টেইনারাইজ করব।
-
-এই অ্যাপ্লিকেশনের মূল ফিচার গুলো হবে:
-1. **ক্লায়েন্ট রেজিস্ট্রেশন এবং লগইন**।
-2. **প্রোব্লেম টিকেট তৈরি**।
-3. **ইঞ্জিনিয়ারদের মধ্যে প্রোব্লেম টিকেট অটোমেটিক্যালি অ্যাসাইন করা**।
-4. **টিকেট স্ট্যাটাস আপডেট**।
-5. **ক্লায়েন্ট এবং ইঞ্জিনিয়ারদের জন্য আলাদা ড্যাশবোর্ড**।
+আপনার জন্য সম্পূর্ণ কোড নিচে দেওয়া হলো। এই কোডটি Flask, Redis, SQLite, Bootstrap 5, এবং Docker ব্যবহার করে একটি টেকনিক্যাল সাপোর্ট সিস্টেম অ্যাপ্লিকেশন তৈরি করে। এটি সর্বশেষ আপডেট অনুযায়ী সাজানো হয়েছে।
 
 ---
 
-### ধাপ ১: প্রজেক্ট স্ট্রাকচার তৈরি করুন
+### ধাপ ১: প্রজেক্ট স্ট্রাকচার
 
-প্রজেক্টের জন্য নিচের ফাইল এবং ফোল্ডার গুলো তৈরি করুন:
+প্রজেক্টের ফাইল এবং ফোল্ডার গুলো নিম্নরূপ:
 
 ```
 flask_app/
@@ -23,6 +16,7 @@ flask_app/
 │   ├── templates/
 │   │   ├── base.html
 │   │   ├── index.html
+│   │   ├── login.html
 │   │   ├── client_dashboard.html
 │   │   ├── engineer_dashboard.html
 │   │   ├── create_ticket.html
@@ -40,18 +34,69 @@ flask_app/
 
 ---
 
-### ধাপ ২: ডেটাবেস মডেল তৈরি করুন
+### ধাপ ২: `config.py`
 
-`app/models.py` ফাইলে ডেটাবেস মডেল গুলো ডিফাইন করুন:
+```python
+import os
+
+class Config:
+    SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///app.db')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+```
+
+---
+
+### ধাপ ৩: `app/__init__.py`
+
+```python
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_bootstrap import Bootstrap
+import redis
+from flask_login import LoginManager
+
+db = SQLAlchemy()
+bootstrap = Bootstrap()
+redis_client = redis.Redis.from_url('redis://localhost:6379/0')
+login_manager = LoginManager()
+
+def create_app(config_class=Config):
+    app = Flask(__name__)
+    app.config.from_object(config_class)
+
+    db.init_app(app)
+    bootstrap.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = 'main.login'
+
+    from app.routes import main_routes
+    app.register_blueprint(main_routes)
+
+    return app
+```
+
+---
+
+### ধাপ ৪: `app/models.py`
 
 ```python
 from app import db
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # client or engineer
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -68,27 +113,16 @@ class Ticket(db.Model):
 
 ---
 
-### ধাপ ৩: রাউট এবং লজিক তৈরি করুন
-
-`app/routes.py` ফাইলে রাউট এবং লজিক ডিফাইন করুন:
+### ধাপ ৫: `app/routes.py`
 
 ```python
 from flask import render_template, request, redirect, url_for, flash
 from app import db, redis_client
 from app.models import User, Ticket
 from flask import Blueprint
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import login_user, logout_user, login_required, current_user
 
 main_routes = Blueprint('main', __name__)
-
-# লগইন ম্যানেজার সেটআপ
-login_manager = LoginManager()
-login_manager.login_view = 'main.login'
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
 @main_routes.route('/')
 def index():
@@ -100,7 +134,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
+        if user and user.check_password(password):
             login_user(user)
             if user.role == 'client':
                 return redirect(url_for('main.client_dashboard'))
@@ -147,8 +181,13 @@ def create_ticket():
         return redirect(url_for('main.client_dashboard'))
     return render_template('create_ticket.html')
 
+@main_routes.route('/ticket/<int:ticket_id>')
+@login_required
+def ticket_details(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    return render_template('ticket_details.html', ticket=ticket)
+
 def assign_ticket_to_engineer(ticket_id):
-    # Redis ব্যবহার করে ইঞ্জিনিয়ারদের মধ্যে টিকেট অ্যাসাইন করুন
     engineers = User.query.filter_by(role='engineer').all()
     if engineers:
         engineer_id = redis_client.rpop('engineer_queue') or engineers[0].id
@@ -161,7 +200,7 @@ def assign_ticket_to_engineer(ticket_id):
 
 ---
 
-### ধাপ ৪: টেমপ্লেট তৈরি করুন
+### ধাপ ৬: টেমপ্লেট ফাইল
 
 #### `app/templates/base.html`
 ```html
@@ -180,6 +219,36 @@ def assign_ticket_to_engineer(ticket_id):
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+```
+
+#### `app/templates/index.html`
+```html
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Welcome to Technical Support System</h1>
+<a href="{{ url_for('main.login') }}" class="btn btn-primary">Login</a>
+{% endblock %}
+```
+
+#### `app/templates/login.html`
+```html
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Login</h1>
+<form method="POST">
+    <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Login</button>
+</form>
+{% endblock %}
 ```
 
 #### `app/templates/client_dashboard.html`
@@ -217,11 +286,62 @@ def assign_ticket_to_engineer(ticket_id):
 {% endblock %}
 ```
 
+#### `app/templates/create_ticket.html`
+```html
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Create Ticket</h1>
+<form method="POST">
+    <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" class="form-control" id="title" name="title" required>
+    </div>
+    <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <textarea class="form-control" id="description" name="description" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}
+```
+
+#### `app/templates/ticket_details.html`
+```html
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Ticket Details</h1>
+<h2>{{ ticket.title }}</h2>
+<p>{{ ticket.description }}</p>
+<p>Status: {{ ticket.status }}</p>
+<p>Created by: {{ ticket.client.username }}</p>
+{% if ticket.engineer %}
+<p>Assigned to: {{ ticket.engineer.username }}</p>
+{% endif %}
+{% endblock %}
+```
+
 ---
 
-### ধাপ ৫: Docker এবং Redis কনফিগার করুন
+### ধাপ ৭: `Dockerfile`
 
-`docker-compose.yml` ফাইলে Redis এবং Flask অ্যাপ্লিকেশন কনফিগার করুন:
+```Dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["python", "run.py"]
+```
+
+---
+
+### ধাপ ৮: `docker-compose.yml`
 
 ```yaml
 version: '3.8'
@@ -250,7 +370,20 @@ services:
 
 ---
 
-### ধাপ ৬: অ্যাপ্লিকেশন রান করুন
+### ধাপ ৯: `requirements.txt`
+
+```
+Flask==2.0.1
+redis==4.1.0
+Flask-SQLAlchemy==2.5.1
+Flask-Bootstrap==3.3.7.1
+Flask-Login==0.5.0
+python-dotenv==0.19.0
+```
+
+---
+
+### ধাপ ১০: অ্যাপ্লিকেশন রান করুন
 
 ```bash
 docker-compose up --build
@@ -266,4 +399,4 @@ docker-compose up --build
 - Redis ব্যবহার করে ইঞ্জিনিয়ারদের মধ্যে টিকেট ভাগ করা হবে।
 - ক্লায়েন্ট এবং ইঞ্জিনিয়ারদের জন্য আলাদা ড্যাশবোর্ড থাকবে।
 
-এই অ্যাপ্লিকেশনটি আপনার প্রয়োজন অনুযায়ী আরো উন্নত করা যাবে, যেমন নোটিফিকেশন সিস্টেম, টিকেট প্রায়োরিটি, এবং রিপোর্টিং ফিচার অ্যাড করা।
+এই অ্যাপ্লিকেশনটি আপনার প্রয়োজন অনুযায়ী আরো উন্নত করা যাবে।
