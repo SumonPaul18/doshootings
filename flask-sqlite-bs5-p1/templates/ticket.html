@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        টিকেট #{{ ticket.id }}
+    </div>
+    <div class="card-body">
+        <h5 class="card-title">{{ ticket.service_type }} সমস্যা</h5>
+        <p class="card-text">{{ ticket.problem_description }}</p>
+        
+        {% if ticket.status == 'Auto-Resolved' %}
+            <div class="alert alert-success">
+                <h5>স্বয়ংক্রিয় সমাধান:</h5>
+                {{ ticket.solution }}
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                <h5>অ্যাসাইন্ড ইঞ্জিনিয়ার:</h5>
+                {% if engineer %}
+                    <p>নাম: {{ engineer.name }}</p>
+                    <p>যোগাযোগ: {{ engineer.contact }}</p>
+                {% else %}
+                    <p>কোন ইঞ্জিনিয়ার অ্যাসাইন করা হয়নি</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+<a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">ফিরে যান</a>
+{% endblock %}
