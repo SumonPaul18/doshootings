@@ -87,9 +87,9 @@ if __name__ == '__main__':
         # ডেমো ডেটা যোগ করুন
         if not Engineer.query.first():
             engineers = [
-                Engineer(name="আব্দুল করিম", expertise="মেইল", contact="0171XXXXXXX"),
-                Engineer(name="রহিমা আক্তার", expertise="ইন্টারনেট", contact="0182XXXXXXX"),
-                Engineer(name="সামিউল ইসলাম", expertise="সফটওয়্যার", contact="0191XXXXXXX")
+                Engineer(name="Sumon Paul", expertise="মেইল", contact="0171XXXXXXX"),
+                Engineer(name="Noman Bhai", expertise="ইন্টারনেট", contact="0182XXXXXXX"),
+                Engineer(name="Sumon Paul", expertise="সফটওয়্যার", contact="0191XXXXXXX")
             ]
             db.session.bulk_save_objects(engineers)
             db.session.commit()
