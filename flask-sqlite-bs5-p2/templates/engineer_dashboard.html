@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">আপনার অ্যাসাইন্ড টিকেটসমূহ</h2>
+
+<div class="list-group">
+    {% for ticket in tickets %}
+    <a href="{{ url_for('view_ticket', ticket_id=ticket.id) }}" 
+       class="list-group-item list-group-item-action">
+        <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">{{ ticket.title }}</h5>
+            <span class="badge bg-{{ 'warning' if ticket.status == 'Open' else 'success' }}">
+                {{ ticket.status }}
+            </span>
+        </div>
+        <p class="mb-1">{{ ticket.description|truncate(100) }}</p>
+        <small>কাস্টমার: {{ ticket.customer.name }}</small>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

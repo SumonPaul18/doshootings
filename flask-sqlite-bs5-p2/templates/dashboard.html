@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>সকল টিকেট</h2>
+<a href="{{ url_for('create_ticket') }}" class="btn btn-primary mb-3">নতুন টিকেট তৈরি করুন</a>
+
+<div class="list-group">
+    {% for ticket in tickets %}
+    <a href="{{ url_for('view_ticket', ticket_id=ticket.id) }}" 
+       class="list-group-item list-group-item-action {% if ticket.status == 'Auto-Resolved' %}list-group-item-success{% endif %}">
+        <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">{{ ticket.service_type }}</h5>
+            <small>স্ট্যাটাস: {{ ticket.status }}</small>
+        </div>
+        <p class="mb-1">{{ ticket.problem_description|truncate(50) }}</p>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

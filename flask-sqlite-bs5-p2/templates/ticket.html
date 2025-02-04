@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4>{{ ticket.title }}</h4>
+        <span class="badge bg-{{ 'warning' if ticket.status == 'Open' else 'success' }}">
+            {{ ticket.status }}
+        </span>
+    </div>
+    <div class="card-body">
+        <h5>বিস্তারিত বর্ণনা:</h5>
+        <p class="card-text">{{ ticket.description }}</p>
+        
+        {% if ticket.solution %}
+            <div class="alert alert-success mt-4">
+                <h5>সমাধান:</h5>
+                <p>{{ ticket.solution }}</p>
+                {% if current_user.role == 'customer' and ticket.status == 'Resolved' %}
+                    <form method="POST" action="{{ url_for('update_ticket', ticket_id=ticket.id) }}">
+                        <button type="submit" class="btn btn-success">সমাধান নিশ্চিত করুন</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        {% if current_user.role == 'engineer' and ticket.status != 'Confirmed' %}
+            <hr>
+            <h5>সমাধান যোগ করুন</h5>
+            <form method="POST" action="{{ url_for('update_ticket', ticket_id=ticket.id) }}">
+                <textarea name="solution" class="form-control mb-3" rows="4" required></textarea>
+                <button type="submit" class="btn btn-primary">সমাধান সাবমিট করুন</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+<a href="{{ url_for('dashboard') }}" class="btn btn-secondary">ফিরে যান</a>
+{% endblock %}
