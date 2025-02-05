@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>নতুন টিকেট তৈরি করুন</h2>
+<form method="POST">
+    <!-- টিকেটের শিরোনাম -->
+    <div class="mb-3">
+        <label class="form-label">টিকেটের শিরোনাম</label>
+        <input type="text" name="title" class="form-control" required>
+    </div>
+
+    <!-- সার্ভিস ধরণ -->
+    <div class="mb-3">
+        <label class="form-label">সার্ভিস ধরণ</label>
+        <select name="service_type" class="form-select" required>
+            <option value="" disabled selected>একটি সার্ভিস নির্বাচন করুন</option>
+            <option value="মেইল">মেইল</option>
+            <option value="ইন্টারনেট">ইন্টারনেট</option>
+            <option value="সফটওয়্যার">সফটওয়্যার</option>
+        </select>
+    </div>
+
+    <!-- সমস্যার বর্ণনা -->
+    <div class="mb-3">
+        <label class="form-label">সমস্যার বর্ণনা</label>
+        <textarea name="description" class="form-control" rows="3" required></textarea>
+    </div>
+
+    <!-- সাবমিট বাটন -->
+    <button type="submit" class="btn btn-primary">টিকেট সাবমিট করুন</button>
+</form>
+
+{% if get_flashed_messages() %}
+    <div class="alert alert-warning mt-3">
+        {% for message in get_flashed_messages() %}
+            {{ message }}<br>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% endblock %}

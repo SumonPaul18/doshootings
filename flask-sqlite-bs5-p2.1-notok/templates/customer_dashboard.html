@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>আপনার টিকেটসমূহ</h2>
+    <a href="{{ url_for('tickets.create_ticket') }}" class="btn btn-primary">নতুন টিকেট তৈরি করুন</a>
+</div>
+
+<div class="list-group">
+    {% for ticket in tickets %}
+    <a href="{{ url_for('tickets.view_ticket', ticket_id=ticket.id) }}" 
+       class="list-group-item list-group-item-action">
+        <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">{{ ticket.title }}</h5>
+            <span class="badge bg-{% if ticket.status == 'Open' %}warning{% elif ticket.status == 'Resolved' %}success{% else %}primary{% endif %}">
+                {{ ticket.status }}
+            </span>
+        </div>
+        <p class="mb-1">{{ ticket.description|truncate(100) }}</p>
+        <small>সার্ভিস: {{ ticket.service_type }}</small>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

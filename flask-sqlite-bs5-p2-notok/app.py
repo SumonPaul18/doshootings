@@ -107,9 +107,43 @@ def create_ticket():
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
-        title = request.form['title']
-        service_type = request.form['service_type']
-        description = request.form['description']
+        title = request.form.get('title')
+        service_type = request.form.get('service_type')
+        description = request.form.get('description')
+
+        # Validate that all fields are filled
+        if not title or not service_type or not description:
+            flash('All fields are required!')
+            return redirect(url_for('create_ticket'))
+
+        new_ticket = Ticket(
+            title=title,
+            service_type=service_type,
+            description=description,
+            customer_id=current_user.id,  # Automatically associate with logged-in user
+            status='Open'
+        )
+        
+        db.session.add(new_ticket)
+        
+        try:
+            db.session.commit()
+            flash('Ticket created successfully!')
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while creating the ticket. Please try again.')
+    
+    services = Service.query.all()
+    return render_template('create_ticket.html', services=services)
+
+    if current_user.role != 'customer':
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        title = request.form.get('title')
+        service_type = request.form.get('service_type')
+        description = request.form.get('description')
         
         new_ticket = Ticket(
             title=title,
